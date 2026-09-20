@@ -16,8 +16,12 @@ const cycle: WhoopCycle = {
 
 test("unit conversions and local cycle date", () => {
   assert.equal(hours(25_200_000), 7);
+  assert.equal(hours(undefined), undefined);
   assert.equal(calories(2_092), 500);
+  assert.equal(calories(undefined), undefined);
   assert.equal(cycleLocalDate(cycle.start, cycle.timezone_offset), "2026-09-20");
+  assert.equal(cycleLocalDate("2026-09-20T01:00:00Z", "-05:00"), "2026-09-19");
+  assert.equal(cycleLocalDate("2026-09-20T01:00:00Z", "invalid"), "2026-09-20");
 });
 
 test("workouts are assigned using WHOOP cycle boundaries", () => {
@@ -85,4 +89,66 @@ test("summary maps WHOOP scores into one stable daily record", () => {
   assert.ok(summary.properties["Recovery Score"]);
   assert.ok(summary.properties["Sleep Duration (h)"]);
   assert.ok(summary.properties["Workout Activities"]);
+  assert.equal(summary.upstreamUpdatedAt, cycle.updated_at);
+});
+
+test("summary tolerates pending recovery and sleep data", () => {
+  const summary = buildSummary(cycle, null, null, [], new Date("2026-09-20T23:00:00Z"));
+
+  assert.equal(summary.cycleId, "42");
+  assert.equal(summary.properties["Recovery Score"], undefined);
+  assert.equal(summary.properties["Sleep Duration (h)"], undefined);
+  assert.deepEqual(summary.properties["Recovery Status"], [["Not available"]]);
+  assert.deepEqual(summary.properties["Sleep Status"], [["Not available"]]);
+  assert.deepEqual(summary.properties["Workout Count"], [["0"]]);
+});
+
+test("summary aggregates workouts and keeps the latest upstream timestamp", () => {
+  const workouts = [
+    {
+      id: "one",
+      created_at: "2026-09-20T10:00:00Z",
+      updated_at: "2026-09-20T11:00:00Z",
+      start: "2026-09-20T10:00:00Z",
+      end: "2026-09-20T11:00:00Z",
+      sport_id: 1,
+      sport_name: "running",
+      score_state: "SCORED",
+      score: { strain: 4.25, kilojoule: 209.2 },
+    },
+    {
+      id: "two",
+      created_at: "2026-09-20T14:00:00Z",
+      updated_at: "2026-09-21T01:00:00Z",
+      start: "2026-09-20T14:00:00Z",
+      end: "2026-09-20T15:00:00Z",
+      sport_id: 1,
+      sport_name: "running",
+      score_state: "SCORED",
+      score: { strain: 3.75, kilojoule: 209.2 },
+    },
+  ] satisfies WhoopWorkout[];
+
+  const summary = buildSummary(cycle, null, null, workouts);
+  assert.deepEqual(summary.properties["Workout Count"], [["2"]]);
+  assert.deepEqual(summary.properties["Workout Activities"], [["running"]]);
+  assert.deepEqual(summary.properties["Workout Strain Total"], [["8"]]);
+  assert.deepEqual(summary.properties["Workout Calories"], [["100"]]);
+  assert.equal(summary.upstreamUpdatedAt, "2026-09-21T01:00:00Z");
+});
+
+test("an open cycle uses the supplied current time as its upper boundary", () => {
+  const openCycle = { ...cycle };
+  delete openCycle.end;
+  const workouts = [
+    { id: "inside", start: "2026-09-20T10:00:00Z" },
+    { id: "future", start: "2026-09-21T10:00:00Z" },
+  ] as WhoopWorkout[];
+
+  assert.deepEqual(
+    workoutsForCycle(openCycle, workouts, new Date("2026-09-20T12:00:00Z")).map(
+      (workout) => workout.id,
+    ),
+    ["inside"],
+  );
 });

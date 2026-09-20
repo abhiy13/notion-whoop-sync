@@ -109,6 +109,7 @@ by design.
 ```bash
 npm run check                               # Type-check
 npm test                                    # Offline model tests
+npm run test:coverage                       # Tests with a coverage report
 ntn workers sync status                     # Live sync status
 ntn workers runs list                       # Recent runs
 ntn workers runs logs <run-id>              # Logs for one run
