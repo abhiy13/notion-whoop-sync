@@ -2,9 +2,9 @@
 
 This is a native [Notion Worker](https://developers.notion.com/workers/get-started/overview)
 that runs entirely on Notion's infrastructure. It authenticates directly with
-WHOOP, creates a managed **WHOOP Daily Health** database, and updates it every
-day. There is no GitHub Actions job, external server, Notion API token, or
-pre-created database to maintain.
+WHOOP, creates a managed Notion database, and updates it every day. There is no
+GitHub Actions job, external server, Notion API token, or pre-created database
+to maintain.
 
 Each row represents one WHOOP physiological cycle and includes day strain,
 calories, heart rate, recovery, HRV, sleep stages and scores, respiratory rate,
@@ -65,14 +65,19 @@ offline read:cycles read:recovery read:sleep read:workout
 
 ### 4. Store credentials and connect WHOOP
 
-Store the credentials in Notion's encrypted Worker environment, redeploy the
-manifest, and complete WHOOP's OAuth flow:
+Store the credentials in Notion's encrypted Worker environment, optionally set
+the database name, redeploy the manifest, and complete WHOOP's OAuth flow:
 
 ```bash
-ntn workers env set WHOOP_CLIENT_ID=your-client-id WHOOP_CLIENT_SECRET=your-client-secret
+ntn workers env set WHOOP_CLIENT_ID=your-client-id WHOOP_CLIENT_SECRET=your-client-secret NOTION_DATABASE_NAME="My WHOOP Data"
 ntn workers deploy
 ntn workers oauth start whoopAuth
 ```
+
+`NOTION_DATABASE_NAME` defaults to `WHOOP Daily DB`. Notion uses it as the
+initial title when it creates the managed database. Changing the variable after
+that first creation does not rename the existing database; rename an existing
+database directly in Notion.
 
 Notion stores the access and refresh tokens and refreshes them automatically.
 This matters because WHOOP invalidates the old refresh token whenever it issues
@@ -95,9 +100,9 @@ ntn workers sync trigger whoopBackfill --preview
 ntn workers sync trigger whoopBackfill
 ```
 
-The managed **WHOOP Daily Health** database appears with the Worker in Notion.
-You can add your own editable properties and views; properties controlled by the
-sync are read-only by design.
+The managed database appears with the Worker in Notion. You can add your own
+editable properties and views; properties controlled by the sync are read-only
+by design.
 
 ## Development and operations
 

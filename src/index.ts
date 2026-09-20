@@ -7,6 +7,8 @@ import { createWhoopClient } from "./whoop.js";
 const worker = new Worker();
 export default worker;
 
+const databaseName = process.env.NOTION_DATABASE_NAME?.trim() || "WHOOP Daily DB";
+
 const whoopAuth = worker.oauth("whoopAuth", {
   name: "WHOOP",
   authorizationEndpoint: "https://api.prod.whoop.com/oauth/oauth2/auth",
@@ -24,7 +26,7 @@ const whoopApi = worker.pacer("whoopApi", {
 
 const dailyHealth = worker.database("dailyHealth", {
   type: "managed",
-  initialTitle: "WHOOP Daily Health",
+  initialTitle: databaseName,
   primaryKeyProperty: "Cycle ID",
   schema: {
     properties: {
