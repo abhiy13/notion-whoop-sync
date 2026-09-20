@@ -1,4 +1,5 @@
 .env
+workers.json
 node_modules/
 dist/
 *.tsbuildinfo

@@ -6,7 +6,7 @@
   "description": "A Notion Worker that syncs WHOOP health data into a managed Notion database",
   "scripts": {
     "build": "tsc",
-    "check": "tsc --noEmit",
+    "check": "tsc -p tsconfig.check.json",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:coverage": "node --experimental-test-coverage --import tsx --test tests/*.test.ts"
   },
